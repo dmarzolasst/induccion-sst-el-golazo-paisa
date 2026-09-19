@@ -1,0 +1,1265 @@
+<title>Inducción SST</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+  :root{
+    --ink:#132420;
+    --ink-soft:#3c5450;
+    --bg:#F7F4EC;
+    --surface:#FFFFFF;
+    --surface-2:#EFEAE0;
+    --line:rgba(19,36,32,.14);
+    --primary:#0B3D3E;
+    --primary-ink:#EAF3F2;
+    --accent:#F2660B;
+    --accent-ink:#FFFFFF;
+    --safe:#1F7A3D;
+    --safe-bg:#E7F3EA;
+    --danger:#C0311A;
+    --danger-bg:#FBEAE6;
+    --warn:#B8860B;
+    --warn-bg:#FBF3DE;
+    --shadow: 0 1px 2px rgba(19,36,32,.06), 0 10px 30px -12px rgba(19,36,32,.25);
+    --radius: 14px;
+    --focus: 0 0 0 3px rgba(242,102,11,.45);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#EDF3F1;
+      --ink-soft:#AFC3BE;
+      --bg:#0E1917;
+      --surface:#152624;
+      --surface-2:#1B2E2B;
+      --line:rgba(237,243,241,.14);
+      --primary:#2E8C87;
+      --primary-ink:#08211F;
+      --accent:#FF8A3D;
+      --accent-ink:#241000;
+      --safe:#4FBF74;
+      --safe-bg:#123322;
+      --danger:#FF7A63;
+      --danger-bg:#3A1712;
+      --warn:#E3B23C;
+      --warn-bg:#332A0F;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 20px 45px -18px rgba(0,0,0,.65);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#EDF3F1;
+    --ink-soft:#AFC3BE;
+    --bg:#0E1917;
+    --surface:#152624;
+    --surface-2:#1B2E2B;
+    --line:rgba(237,243,241,.14);
+    --primary:#2E8C87;
+    --primary-ink:#08211F;
+    --accent:#FF8A3D;
+    --accent-ink:#241000;
+    --safe:#4FBF74;
+    --safe-bg:#123322;
+    --danger:#FF7A63;
+    --danger-bg:#3A1712;
+    --warn:#E3B23C;
+    --warn-bg:#332A0F;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 20px 45px -18px rgba(0,0,0,.65);
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Public Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    line-height:1.55;
+    padding:0;
+  }
+  h1,h2,h3,.display{
+    font-family:'Big Shoulders Display',system-ui,sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.01em;
+    text-wrap:balance;
+    line-height:1.02;
+    margin:0;
+  }
+  .mono{font-family:'IBM Plex Mono',ui-monospace,monospace;}
+  a{color:inherit;}
+  button{font:inherit;color:inherit;}
+  :focus-visible{outline:none; box-shadow:var(--focus); border-radius:6px;}
+  ::selection{background:var(--accent); color:var(--accent-ink);}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important;}
+  }
+
+  /* ---------- shell ---------- */
+  #app{min-height:100%;}
+  .skiplink{position:absolute; left:-999px; top:0; background:var(--accent); color:var(--accent-ink); padding:.6em 1em; z-index:200; border-radius:0 0 8px 0;}
+  .skiplink:focus{left:0;}
+
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    max-width:1180px; margin:0 auto; padding:10px 20px;
+    display:flex; align-items:center; gap:16px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px; font-family:'Big Shoulders Display'; font-weight:800;
+    text-transform:uppercase; font-size:15px; letter-spacing:.04em; white-space:nowrap;
+  }
+  .brand-badge{
+    width:30px; height:30px; border-radius:7px; background:var(--accent); color:var(--accent-ink);
+    display:grid; place-items:center; font-size:15px; flex:none;
+    box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);
+  }
+  .steps{
+    flex:1; display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; padding:2px;
+  }
+  .steps::-webkit-scrollbar{display:none;}
+  .step-dot{
+    flex:none; display:flex; align-items:center; gap:7px; padding:6px 10px 6px 6px; border:1px solid var(--line);
+    border-radius:999px; background:var(--surface-2); cursor:pointer; transition:background .15s, border-color .15s, opacity .15s;
+    font-size:12.5px; white-space:nowrap;
+  }
+  .step-dot[disabled]{opacity:.4; cursor:not-allowed;}
+  .step-dot .n{
+    width:20px; height:20px; border-radius:50%; display:grid; place-items:center; font-family:'IBM Plex Mono'; font-weight:600;
+    font-size:11px; background:var(--surface); border:1px solid var(--line); flex:none;
+  }
+  .step-dot.done .n{background:var(--safe); border-color:var(--safe); color:#fff;}
+  .step-dot.current{background:var(--primary); border-color:var(--primary); color:var(--primary-ink);}
+  .step-dot.current .n{background:var(--primary-ink); color:var(--primary); border-color:transparent;}
+  .step-label{display:none;}
+  @media(min-width:860px){ .step-label{display:inline;} }
+
+  .progress-rail{height:3px; background:var(--surface-2);}
+  .progress-fill{height:100%; background:var(--accent); width:0%; transition:width .4s ease;}
+
+  main{max-width:1180px; margin:0 auto; padding:0 20px 90px;}
+  section.view{display:none;}
+  section.view[data-active="true"]{display:block;}
+
+  .eyebrow{
+    font-family:'IBM Plex Mono'; font-weight:600; font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent); display:flex; align-items:center; gap:8px; margin-bottom:10px;
+  }
+  .eyebrow .bar{width:22px; height:2px; background:var(--accent); display:inline-block;}
+
+  .lead{font-size:1.05rem; max-width:62ch; color:var(--ink-soft);}
+  p{max-width:68ch;}
+
+  /* speakable text */
+  .narratable{position:relative; cursor:pointer; padding:2px 4px 2px 30px; margin-left:-30px; border-radius:8px; transition:background .15s;}
+  .narratable:hover{background:var(--surface-2);}
+  .narratable:before{
+    content:"🔊"; position:absolute; left:0; top:.15em; font-size:.85em; opacity:.55;
+  }
+  .narratable.speaking{background:var(--warn-bg); }
+  .narratable.speaking:before{content:"⏸"; opacity:1;}
+
+  .speak-btn{
+    display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); background:var(--surface);
+    border-radius:999px; padding:7px 14px 7px 10px; cursor:pointer; font-size:13px; font-weight:600; color:var(--ink);
+    transition:border-color .15s, background .15s;
+  }
+  .speak-btn:hover{border-color:var(--accent);}
+  .speak-btn.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .speak-icon{font-size:14px;}
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:42px 0 30px; display:grid; grid-template-columns:1.1fr .9fr; gap:36px; align-items:center;
+  }
+  @media(max-width:860px){ .hero{grid-template-columns:1fr; padding-top:26px;} }
+  .hero h1{font-size:clamp(2.6rem,6vw,4.4rem); color:var(--ink);}
+  .hero h1 em{font-style:normal; color:var(--accent);}
+  .hero-meta{display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 22px;}
+  .pill{
+    display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--surface);
+    padding:6px 12px; border-radius:999px; font-size:12.5px; font-family:'IBM Plex Mono'; font-weight:600; color:var(--ink-soft);
+  }
+  .cta-row{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
+  .btn{
+    display:inline-flex; align-items:center; gap:9px; border-radius:11px; padding:13px 22px; font-weight:700;
+    font-size:15px; cursor:pointer; border:1px solid transparent; transition:transform .12s, box-shadow .12s, background .15s;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent); color:var(--accent-ink); box-shadow:var(--shadow);}
+  .btn-primary:hover{box-shadow:0 14px 34px -14px rgba(242,102,11,.65), var(--shadow);}
+  .btn-ghost{background:transparent; border-color:var(--line); color:var(--ink);}
+  .btn-ghost:hover{border-color:var(--accent);}
+  .btn[disabled]{opacity:.4; cursor:not-allowed; box-shadow:none;}
+  .btn-sm{padding:9px 15px; font-size:13.5px; border-radius:9px;}
+
+  /* 3D hero scene */
+  .scene-wrap{perspective:1100px; height:320px; display:flex; align-items:center; justify-content:center;}
+  .scene{
+    position:relative; width:100%; height:100%; transform-style:preserve-3d;
+    transform:rotateX(8deg) rotateY(-14deg); transition:transform .25s ease-out;
+  }
+  .scene-card{
+    position:absolute; width:150px; height:150px; border-radius:20px; left:50%; top:50%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    box-shadow:0 25px 45px -18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.15);
+    font-size:52px; border:1px solid rgba(255,255,255,.12);
+  }
+  .scene-card span.tag{font-family:'IBM Plex Mono'; font-size:10.5px; font-weight:600; color:inherit; opacity:.85; letter-spacing:.05em;}
+  .sc1{background:linear-gradient(155deg,var(--accent),#c94c04); color:#fff; transform:translate(-50%,-50%) translate3d(-120px,-46px,70px) rotateZ(-6deg);}
+  .sc2{background:linear-gradient(155deg,var(--primary),#062527); color:var(--primary-ink); transform:translate(-50%,-50%) translate3d(70px,-70px,20px) rotateZ(5deg);}
+  .sc3{background:linear-gradient(155deg,var(--safe),#155c2d); color:#fff; transform:translate(-50%,-50%) translate3d(96px,54px,55px) rotateZ(4deg);}
+  .sc4{background:linear-gradient(155deg,var(--danger),#8f2312); color:#fff; transform:translate(-50%,-50%) translate3d(-90px,70px,0px) rotateZ(-4deg);}
+  .sc5{background:linear-gradient(155deg,var(--surface-2),var(--surface)); color:var(--ink); transform:translate(-50%,-50%) translate3d(6px,4px,-40px) scale(1.35); box-shadow:none; border:1px dashed var(--line);}
+
+  /* ---------- module header ---------- */
+  .module-head{
+    display:flex; gap:20px; align-items:flex-end; padding:34px 0 22px; border-bottom:1px solid var(--line); margin-bottom:30px;
+    flex-wrap:wrap;
+  }
+  .module-num{
+    font-family:'Big Shoulders Display'; font-weight:900; font-size:clamp(3rem,8vw,5rem); color:var(--surface-2);
+    -webkit-text-stroke:1.5px var(--line); line-height:.8;
+  }
+  .module-head h2{font-size:clamp(1.9rem,4.2vw,2.9rem);}
+  .module-sub{font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.08em; margin-top:4px;}
+
+  section .lead{margin-bottom:6px;}
+  .block{margin:26px 0;}
+  .block h3{font-size:1.25rem; text-transform:none; font-family:'Public Sans'; font-weight:700; margin-bottom:10px; letter-spacing:0;}
+
+  /* legal table */
+  .legal-grid{display:grid; gap:10px; margin-top:14px;}
+  .legal-row{
+    display:grid; grid-template-columns:180px 1fr; gap:14px; padding:14px 16px; background:var(--surface); border:1px solid var(--line);
+    border-radius:10px; align-items:start;
+  }
+  @media(max-width:640px){ .legal-row{grid-template-columns:1fr;} }
+  .legal-row .name{font-family:'IBM Plex Mono'; font-weight:600; font-size:12.5px; color:var(--accent);}
+  .legal-row .desc{font-size:14px; color:var(--ink-soft);}
+
+  /* responsibilities two column */
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:16px;}
+  @media(max-width:720px){ .two-col{grid-template-columns:1fr;} }
+  .resp-card{border-radius:var(--radius); padding:22px; border:1px solid var(--line);}
+  .resp-card.employer{background:var(--surface);}
+  .resp-card.worker{background:var(--surface-2);}
+  .resp-card h4{font-family:'Big Shoulders Display'; text-transform:uppercase; font-size:1.15rem; margin-bottom:12px; display:flex; align-items:center; gap:10px;}
+  .resp-card ul{margin:0; padding-left:0; list-style:none; display:grid; gap:9px;}
+  .resp-card li{display:flex; gap:10px; font-size:14.5px;}
+  .resp-card li:before{content:"—"; color:var(--accent); flex:none;}
+
+  .roles-row{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px;}
+  @media(max-width:760px){ .roles-row{grid-template-columns:1fr;} }
+  .role-card{border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--surface);}
+  .role-card .k{font-family:'IBM Plex Mono'; font-size:11px; color:var(--accent); font-weight:600; letter-spacing:.06em;}
+  .role-card h5{margin:4px 0 6px; font-size:1rem;}
+  .role-card p{font-size:13.5px; color:var(--ink-soft); margin:0;}
+
+  /* hazard cards - 3D flip */
+  .hazard-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:18px;}
+  @media(max-width:920px){ .hazard-grid{grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:520px){ .hazard-grid{grid-template-columns:1fr;} }
+  .flip{perspective:1000px; height:190px;}
+  .flip-inner{
+    position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.2,.7,.3,1);
+    cursor:pointer; border-radius:14px;
+  }
+  .flip.on .flip-inner{transform:rotateY(180deg);}
+  .flip-face{
+    position:absolute; inset:0; border-radius:14px; padding:16px; display:flex; flex-direction:column;
+    backface-visibility:hidden; border:1px solid var(--line);
+  }
+  .flip-front{background:var(--surface); justify-content:space-between;}
+  .flip-front .icon{font-size:34px;}
+  .flip-front .name{font-family:'Big Shoulders Display'; font-size:1.15rem; text-transform:uppercase;}
+  .flip-front .tap{font-family:'IBM Plex Mono'; font-size:10.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em;}
+  .flip-back{background:var(--primary); color:var(--primary-ink); transform:rotateY(180deg); font-size:13px; justify-content:center; gap:6px;}
+  .flip-back b{font-family:'IBM Plex Mono'; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; opacity:.85;}
+
+  /* hierarchy pyramid */
+  .pyramid{display:flex; flex-direction:column; align-items:center; gap:6px; margin:24px 0; max-width:640px;}
+  .pyr-row{
+    display:flex; align-items:center; justify-content:center; gap:12px; color:#fff; padding:14px 18px; border-radius:9px;
+    cursor:pointer; transition:transform .15s, filter .15s; font-weight:700; text-align:center;
+  }
+  .pyr-row:hover{transform:translateY(-2px); filter:brightness(1.06);}
+  .pyr-row .pn{font-family:'IBM Plex Mono'; font-size:11px; opacity:.85;}
+  .pyr-1{width:100%; background:#1F7A3D;}
+  .pyr-2{width:86%; background:#2E8C87;}
+  .pyr-3{width:72%; background:#0B3D3E;}
+  .pyr-4{width:58%; background:#B8860B;}
+  .pyr-5{width:44%; background:#C0311A;}
+  .pyr-note{font-size:13px; color:var(--ink-soft); text-align:center; max-width:50ch; margin-top:6px;}
+
+  /* EPP */
+  .epp-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:18px;}
+  @media(max-width:920px){ .epp-grid{grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:520px){ .epp-grid{grid-template-columns:1fr;} }
+  .epp-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px;
+    transform-style:preserve-3d; transition:transform .25s;
+  }
+  .epp-card:hover{transform:rotateX(6deg) rotateY(-6deg) translateY(-3px); box-shadow:var(--shadow);}
+  .epp-card .icon{font-size:30px;}
+  .epp-card h5{font-size:15px; margin:8px 0 4px;}
+  .epp-card p{font-size:12.5px; color:var(--ink-soft); margin:0;}
+
+  .rule-list{display:grid; gap:10px; margin-top:16px;}
+  .rule{display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--surface);}
+  .rule .num{font-family:'IBM Plex Mono'; font-weight:700; color:var(--accent); flex:none;}
+  .rule.no{background:var(--danger-bg); border-color:transparent;}
+  .rule.no .num{color:var(--danger);}
+
+  /* module 4: definitions */
+  .def-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px;}
+  @media(max-width:820px){ .def-grid{grid-template-columns:1fr;} }
+  .def-card{border-radius:12px; padding:18px; border:1px solid var(--line);}
+  .def-card.a{background:var(--warn-bg);}
+  .def-card.b{background:var(--danger-bg);}
+  .def-card.c{background:var(--safe-bg);}
+  .def-card .k{font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.07em; font-weight:700;}
+  .def-card h5{margin:6px 0 8px; font-size:1.05rem;}
+  .def-card p{font-size:13.5px; margin:0; color:var(--ink);}
+
+  .pas-row{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px;}
+  @media(max-width:760px){ .pas-row{grid-template-columns:1fr;} }
+  .pas-step{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; text-align:center;}
+  .pas-step .letter{
+    width:46px; height:46px; border-radius:50%; background:var(--primary); color:var(--primary-ink); display:flex;
+    align-items:center; justify-content:center; font-family:'Big Shoulders Display'; font-weight:800; font-size:20px; margin:0 auto 10px;
+  }
+  .pas-step h5{font-size:15px; margin:0 0 6px;}
+  .pas-step p{font-size:13px; color:var(--ink-soft); margin:0;}
+
+  .timeline{border-left:2px solid var(--line); margin:18px 0 18px 8px; padding-left:20px; display:grid; gap:20px;}
+  .tl-item{position:relative;}
+  .tl-item:before{content:""; position:absolute; left:-25.5px; top:3px; width:11px; height:11px; border-radius:50%; background:var(--accent); border:2px solid var(--bg);}
+  .tl-item .t{font-family:'IBM Plex Mono'; font-size:11.5px; color:var(--accent); font-weight:700; letter-spacing:.04em;}
+  .tl-item h5{margin:3px 0 4px; font-size:1rem;}
+  .tl-item p{font-size:13.5px; color:var(--ink-soft); margin:0;}
+
+  .extinguisher{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:16px;}
+  @media(max-width:760px){ .extinguisher{grid-template-columns:repeat(2,1fr);} }
+  .ext-step{background:var(--primary); color:var(--primary-ink); border-radius:12px; padding:16px; text-align:center;}
+  .ext-step .l{font-family:'Big Shoulders Display'; font-size:1.8rem; font-weight:800;}
+  .ext-step p{font-size:12.5px; margin:6px 0 0;}
+
+  /* module 5 */
+  .channel-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px;}
+  @media(max-width:820px){ .channel-grid{grid-template-columns:1fr;} }
+  .channel{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px;}
+  .channel .icon{font-size:26px;}
+  .channel h5{font-size:15px; margin:8px 0 4px;}
+  .channel p{font-size:13px; color:var(--ink-soft); margin:0;}
+
+  .commit-list{display:grid; gap:10px; margin-top:16px;}
+  .commit{display:flex; gap:12px; align-items:center; padding:13px 15px; border:1px solid var(--line); border-radius:10px; background:var(--surface); cursor:pointer;}
+  .commit input{width:19px; height:19px; accent-color:var(--accent); flex:none;}
+  .commit span{font-size:14.5px;}
+  .commit.checked{background:var(--safe-bg); border-color:transparent;}
+
+  /* nav footer within module */
+  .module-nav{display:flex; justify-content:space-between; align-items:center; margin-top:42px; padding-top:22px; border-top:1px solid var(--line); gap:12px; flex-wrap:wrap;}
+
+  /* quiz */
+  .quiz-head{display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:22px;}
+  .quiz-progress{font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--ink-soft);}
+  .qcard{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:28px; box-shadow:var(--shadow); max-width:760px;}
+  .qcard .qn{font-family:'IBM Plex Mono'; color:var(--accent); font-size:12.5px; font-weight:700; letter-spacing:.06em; margin-bottom:8px;}
+  .qcard h3{font-family:'Public Sans'; text-transform:none; font-weight:700; font-size:1.25rem; letter-spacing:0; margin-bottom:18px;}
+  .opt-list{display:grid; gap:10px;}
+  .opt{
+    display:flex; gap:12px; align-items:flex-start; padding:13px 15px; border:1.5px solid var(--line); border-radius:10px;
+    cursor:pointer; background:var(--bg); transition:border-color .15s, background .15s;
+  }
+  .opt:hover{border-color:var(--accent);}
+  .opt .k{font-family:'IBM Plex Mono'; font-weight:700; color:var(--ink-soft); flex:none;}
+  .opt.correct{background:var(--safe-bg); border-color:var(--safe);}
+  .opt.wrong{background:var(--danger-bg); border-color:var(--danger);}
+  .opt.locked{cursor:default;}
+  .qfoot{display:flex; justify-content:space-between; align-items:center; margin-top:22px; gap:10px;}
+  .feedback{font-size:13.5px; margin-top:14px; padding:12px 14px; border-radius:9px; display:none;}
+  .feedback.show{display:block;}
+  .feedback.ok{background:var(--safe-bg); color:var(--safe);}
+  .feedback.bad{background:var(--danger-bg); color:var(--danger);}
+
+  .result-wrap{max-width:640px;}
+  .score-ring{width:170px; height:170px; border-radius:50%; display:grid; place-items:center; margin:0 auto 22px; position:relative;}
+  .score-ring .num{font-family:'Big Shoulders Display'; font-size:2.6rem; font-weight:800;}
+  .score-ring .lbl{font-family:'IBM Plex Mono'; font-size:11px; color:var(--ink-soft); position:absolute; bottom:36px;}
+
+  /* certificate */
+  .cert-form{display:grid; gap:14px; max-width:420px; margin-bottom:28px;}
+  .cert-form label{font-family:'IBM Plex Mono'; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  .cert-form input{
+    width:100%; padding:12px 14px; border-radius:9px; border:1.5px solid var(--line); background:var(--surface); color:var(--ink); font-size:15px;
+  }
+  .cert-form input:focus{border-color:var(--accent);}
+  .cert-preview-wrap{border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:var(--shadow); max-width:760px;}
+  canvas#certCanvas{display:block; width:100%; height:auto;}
+  .cert-actions{display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;}
+  .cert-note{font-size:12.5px; color:var(--ink-soft); margin-top:10px; max-width:60ch;}
+
+  .footer-note{margin-top:60px; padding:22px 0; border-top:1px solid var(--line); font-size:12.5px; color:var(--ink-soft); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+
+  @media print{
+    .topbar, .module-nav, .cert-form, .cert-actions, .footer-note{display:none !important;}
+    body{background:#fff;}
+  }
+</style>
+
+<a class="skiplink" href="#main">Saltar al contenido</a>
+<div id="app">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="brand-badge">⛑</span> Inducción SST</div>
+      <nav class="steps" id="steps" aria-label="Progreso del curso"></nav>
+    </div>
+    <div class="progress-rail"><div class="progress-fill" id="progressFill"></div></div>
+  </header>
+
+  <main id="main">
+
+    <!-- 0 PORTADA -->
+    <section class="view" data-view="0">
+      <div class="hero">
+        <div>
+          <div class="eyebrow"><span class="bar"></span> Inducción general · Seguridad y Salud en el Trabajo</div>
+          <h1>Cuida tu vida.<br>Empieza por <em>saber cómo.</em></h1>
+          <p class="lead">Esta inducción está dirigida a todas las personas trabajadoras, sin necesidad de conocimientos previos. Al terminar podrás reconocer tus responsabilidades, identificar los peligros más comunes en tu lugar de trabajo, aplicar medidas de prevención básicas y actuar correctamente ante incidentes y emergencias.</p>
+          <div class="hero-meta">
+            <span class="pill">⏱ 45–55 min</span>
+            <span class="pill">📚 5 módulos</span>
+            <span class="pill">✅ Evaluación final</span>
+            <span class="pill">🎓 Certificado</span>
+            <span class="pill">🔊 Audio disponible</span>
+          </div>
+          <div class="cta-row">
+            <button class="btn btn-primary" onclick="App.goTo(1)">Comenzar inducción →</button>
+            <button class="btn btn-ghost" id="heroSpeak" onclick="App.toggleSpeakHero()"><span class="speak-icon">🔊</span> Escuchar objetivos</button>
+          </div>
+        </div>
+        <div class="scene-wrap" id="sceneWrap">
+          <div class="scene" id="scene3d">
+            <div class="scene-card sc1">🦺<span class="tag">EPP</span></div>
+            <div class="scene-card sc2">⚠️<span class="tag">PELIGROS</span></div>
+            <div class="scene-card sc3">🧯<span class="tag">EMERGENCIA</span></div>
+            <div class="scene-card sc4">📋<span class="tag">REPORTE</span></div>
+            <div class="scene-card sc5">⛑</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Objetivos del curso</h3>
+        <div class="two-col" style="grid-template-columns:1fr 1fr;">
+          <div class="resp-card employer">
+            <ul>
+              <li>Reconocer los principios básicos de la SST y las responsabilidades propias de tu puesto de trabajo.</li>
+              <li>Identificar peligros y riesgos habituales en el entorno laboral y aplicar medidas preventivas generales.</li>
+              <li>Utilizar correctamente los equipos de protección individual y seguir normas seguras de trabajo.</li>
+            </ul>
+          </div>
+          <div class="resp-card worker">
+            <ul>
+              <li>Responder adecuadamente ante emergencias, accidentes e incidentes, comunicándolos por los canales establecidos.</li>
+              <li>Adoptar hábitos de participación y comunicación que contribuyan a una cultura preventiva.</li>
+              <li>Aprobar la evaluación final y obtener tu certificado de finalización.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Cómo avanzar</h3>
+        <p style="color:var(--ink-soft); font-size:14px;">Recorre los 5 módulos en orden. En cualquier párrafo con el ícono 🔊 puedes hacer clic para escucharlo. Al finalizar los módulos se habilita la evaluación, y al aprobarla (mínimo 80%) se genera tu certificado descargable.</p>
+      </div>
+    </section>
+
+    <!-- MODULE 1 -->
+    <section class="view" data-view="1" data-module="1">
+      <div class="module-head">
+        <div class="module-num">01</div>
+        <div>
+          <div class="module-sub">Módulo 1 de 5</div>
+          <h2>Fundamentos de la Seguridad y Salud en el Trabajo</h2>
+        </div>
+        <button class="speak-btn" data-speak-module="1"><span class="speak-icon">🔊</span> Escuchar módulo</button>
+      </div>
+
+      <p class="lead narratable" data-speak="La Seguridad y Salud en el Trabajo, conocida como SST, es la disciplina que se encarga de prevenir las lesiones y enfermedades causadas por las condiciones de trabajo, y de proteger y promover la salud de todos los trabajadores. En Colombia, todo empleador tiene la obligación legal de implementar un Sistema de Gestión de Seguridad y Salud en el Trabajo, conocido como SG-SST, y todo trabajador tiene el deber de participar activamente en él.">
+        La Seguridad y Salud en el Trabajo (SST) es la disciplina que previene las lesiones y enfermedades causadas por las condiciones de trabajo, y protege y promueve la salud de todas las personas trabajadoras. En Colombia, todo empleador debe implementar un <b>Sistema de Gestión de Seguridad y Salud en el Trabajo (SG-SST)</b>, y todo trabajador debe participar activamente en él.
+      </p>
+
+      <div class="block">
+        <h3>Marco legal que debes conocer</h3>
+        <div class="legal-grid">
+          <div class="legal-row">
+            <div class="name">Ley 1562 de 2012</div>
+            <div class="desc">Define el Sistema General de Riesgos Laborales: qué es un accidente de trabajo, qué es una enfermedad laboral, y cómo se afilia y protege a los trabajadores a través de la ARL.</div>
+          </div>
+          <div class="legal-row">
+            <div class="name">Decreto 1072 de 2015</div>
+            <div class="desc">Decreto Único Reglamentario del Sector Trabajo. Su Libro 2, Parte 2, Título 4, Capítulo 6 establece la obligación de implementar el SG-SST en toda empresa, sin importar su tamaño o actividad.</div>
+          </div>
+          <div class="legal-row">
+            <div class="name">Resolución 0312 de 2019</div>
+            <div class="desc">Fija los Estándares Mínimos del SG-SST según el número de trabajadores y el nivel de riesgo de la empresa: documentos, responsables, capacitaciones y evaluaciones exigidas.</div>
+          </div>
+          <div class="legal-row">
+            <div class="name">Resolución 2400 de 1979</div>
+            <div class="desc">Estatuto de Seguridad Industrial: condiciones generales de higiene y seguridad que deben existir en todo lugar de trabajo (orden, aseo, ventilación, instalaciones, entre otras).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Responsabilidades compartidas</h3>
+        <p style="font-size:14px; color:var(--ink-soft);">La seguridad en el trabajo es una responsabilidad de dos vías. Así se reparte:</p>
+        <div class="two-col">
+          <div class="resp-card employer">
+            <h4>🏢 El empleador</h4>
+            <ul>
+              <li>Afiliarte a la ARL desde tu primer día, asumiendo el 100% del costo.</li>
+              <li>Identificar los peligros de tu puesto (matriz de peligros) y controlarlos.</li>
+              <li>Entregarte los elementos de protección personal necesarios, sin costo para ti.</li>
+              <li>Capacitarte en los riesgos propios de tu labor, incluida esta inducción.</li>
+              <li>Investigar todo accidente o incidente y tomar acciones correctivas.</li>
+            </ul>
+          </div>
+          <div class="resp-card worker">
+            <h4>🙋 Tú, como trabajador</h4>
+            <ul>
+              <li>Cuidar tu propia salud e integridad y la de tus compañeros.</li>
+              <li>Usar correctamente los EPP entregados y cuidarlos.</li>
+              <li>Cumplir las normas, reglamentos e instrucciones del SG-SST.</li>
+              <li>Reportar de inmediato peligros, incidentes o accidentes.</li>
+              <li>Participar en las capacitaciones, simulacros y actividades de SST.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>¿Quién más participa en la SST de tu empresa?</h3>
+        <div class="roles-row">
+          <div class="role-card">
+            <div class="k">COPASST</div>
+            <h5>Comité Paritario de SST</h5>
+            <p>Formado por representantes del empleador y de los trabajadores. Hace seguimiento al SG-SST y recibe tus quejas o sugerencias sobre condiciones de trabajo.</p>
+          </div>
+          <div class="role-card">
+            <div class="k">Comité de convivencia</div>
+            <h5>Convivencia laboral</h5>
+            <p>Atiende quejas relacionadas con acoso laboral y promueve relaciones de trabajo respetuosas, conforme a la Ley 1010 de 2006.</p>
+          </div>
+          <div class="role-card">
+            <div class="k">ARL</div>
+            <h5>Administradora de Riesgos Laborales</h5>
+            <p>Asesora a la empresa, cubre tus accidentes y enfermedades laborales, y te capacita. Consérvala siempre identificada: es tu respaldo ante una emergencia.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="module-nav">
+        <button class="btn btn-ghost" onclick="App.goTo(0)">← Portada</button>
+        <button class="btn btn-primary" onclick="App.completeModule(1)">Continuar a Módulo 2 →</button>
+      </div>
+    </section>
+
+    <!-- MODULE 2 -->
+    <section class="view" data-view="2" data-module="2">
+      <div class="module-head">
+        <div class="module-num">02</div>
+        <div>
+          <div class="module-sub">Módulo 2 de 5</div>
+          <h2>Peligros y riesgos en el entorno laboral</h2>
+        </div>
+        <button class="speak-btn" data-speak-module="2"><span class="speak-icon">🔊</span> Escuchar módulo</button>
+      </div>
+
+      <p class="lead narratable" data-speak="Un peligro es una fuente con potencial de causar daño, como una máquina, una sustancia o una postura inadecuada. El riesgo es la probabilidad de que ese daño realmente ocurra, combinada con la gravedad de sus consecuencias. Reconocer los peligros de tu puesto de trabajo es el primer paso para prevenir accidentes y enfermedades laborales.">
+        Un <b>peligro</b> es una fuente con potencial de causar daño: una máquina, una sustancia, una postura inadecuada. El <b>riesgo</b> es la probabilidad de que ese daño ocurra, combinada con la gravedad de sus consecuencias. Reconocer los peligros de tu puesto es el primer paso para prevenirlos.
+      </p>
+
+      <div class="block">
+        <h3>Categorías de peligro más comunes</h3>
+        <p style="font-size:13.5px; color:var(--ink-soft); margin-bottom:4px;">Toca cada tarjeta para ver ejemplos y cómo prevenirlos.</p>
+        <div class="hazard-grid" id="hazardGrid"></div>
+      </div>
+
+      <div class="block">
+        <h3>Jerarquía de controles</h3>
+        <p style="font-size:14px; color:var(--ink-soft);">Cuando se identifica un peligro, no todas las medidas de control son igual de efectivas. Esta pirámide, de la más a la menos efectiva, ordena las opciones para controlarlo. Toca cada nivel.</p>
+        <div class="pyramid" id="pyramid">
+          <div class="pyr-row pyr-1" data-i="0"><span class="pn">1</span> Eliminación</div>
+          <div class="pyr-row pyr-2" data-i="1"><span class="pn">2</span> Sustitución</div>
+          <div class="pyr-row pyr-3" data-i="2"><span class="pn">3</span> Controles de ingeniería</div>
+          <div class="pyr-row pyr-4" data-i="3"><span class="pn">4</span> Controles administrativos</div>
+          <div class="pyr-row pyr-5" data-i="4"><span class="pn">5</span> Elementos de protección personal</div>
+        </div>
+        <p class="pyr-note" id="pyrNote">Los EPP son la última barrera, no la primera solución: protegen a la persona, pero no eliminan el peligro. Por eso siempre se combinan con medidas de niveles superiores.</p>
+      </div>
+
+      <div class="module-nav">
+        <button class="btn btn-ghost" onclick="App.goTo(1)">← Módulo 1</button>
+        <button class="btn btn-primary" onclick="App.completeModule(2)">Continuar a Módulo 3 →</button>
+      </div>
+    </section>
+
+    <!-- MODULE 3 -->
+    <section class="view" data-view="3" data-module="3">
+      <div class="module-head">
+        <div class="module-num">03</div>
+        <div>
+          <div class="module-sub">Módulo 3 de 5</div>
+          <h2>Elementos de protección personal y trabajo seguro</h2>
+        </div>
+        <button class="speak-btn" data-speak-module="3"><span class="speak-icon">🔊</span> Escuchar módulo</button>
+      </div>
+
+      <p class="lead narratable" data-speak="Los elementos de protección personal, o EPP, son equipos que usas para reducir tu exposición a un peligro cuando este no se puede eliminar por completo. Son personales e intransferibles: fueron seleccionados para tu riesgo específico, tu talla y tu labor.">
+        Los <b>elementos de protección personal (EPP)</b> reducen tu exposición a un peligro cuando este no se puede eliminar por completo. Son personales e intransferibles: fueron seleccionados para tu riesgo específico, tu talla y tu labor.
+      </p>
+
+      <div class="block">
+        <h3>Conoce tus EPP</h3>
+        <div class="epp-grid">
+          <div class="epp-card"><div class="icon">⛑</div><h5>Cabeza</h5><p>Casco de seguridad. Protege de golpes, caída de objetos y descargas eléctricas.</p></div>
+          <div class="epp-card"><div class="icon">🥽</div><h5>Visual y facial</h5><p>Gafas o careta. Protegen de partículas, salpicaduras y radiación.</p></div>
+          <div class="epp-card"><div class="icon">🦻</div><h5>Auditiva</h5><p>Tapones u orejeras. Reducen la exposición al ruido excesivo.</p></div>
+          <div class="epp-card"><div class="icon">😷</div><h5>Respiratoria</h5><p>Mascarilla o respirador. Filtran polvo, gases o vapores.</p></div>
+          <div class="epp-card"><div class="icon">🧤</div><h5>Manos</h5><p>Guantes según el riesgo: corte, químico, calor o eléctrico.</p></div>
+          <div class="epp-card"><div class="icon">🥾</div><h5>Pies</h5><p>Botas de seguridad con puntera y suela antideslizante.</p></div>
+          <div class="epp-card"><div class="icon">🪢</div><h5>Trabajo en alturas</h5><p>Arnés y línea de vida, con certificación vigente para trabajo en alturas.</p></div>
+          <div class="epp-card"><div class="icon">🦺</div><h5>Alta visibilidad</h5><p>Chaleco reflectivo, indispensable en zonas de tránsito vehicular.</p></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Reglas de uso</h3>
+        <div class="rule-list">
+          <div class="rule"><span class="num">01</span><span>Revisa tu EPP antes de cada uso: si está dañado, deteriorado o vencido, repórtalo y solicita su reposición.</span></div>
+          <div class="rule"><span class="num">02</span><span>Úsalo durante toda la jornada mientras estés expuesto al riesgo, no solo cuando alguien te observa.</span></div>
+          <div class="rule"><span class="num">03</span><span>Guárdalo y límpialo según las indicaciones del fabricante; un EPP mal cuidado pierde su capacidad de protección.</span></div>
+          <div class="rule no"><span class="num">✕</span><span>No lo prestes ni lo intercambies con otro compañero: fue seleccionado para tu riesgo y tu talla.</span></div>
+          <div class="rule no"><span class="num">✕</span><span>No lo modifiques ni le retires partes "para que sea más cómodo": eso anula su protección.</span></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Normas de trabajo seguro</h3>
+        <div class="two-col">
+          <div class="resp-card employer">
+            <h4>🧹 Orden y aseo</h4>
+            <ul>
+              <li>Mantén tu puesto libre de obstáculos, derrames y cables sueltos.</li>
+              <li>Cada herramienta y material tiene un lugar; devuélvelo al terminar.</li>
+              <li>Respeta la señalización de pisos, rutas y zonas restringidas.</li>
+            </ul>
+          </div>
+          <div class="resp-card worker">
+            <h4>🔐 Trabajos de alto riesgo</h4>
+            <ul>
+              <li>Alturas, espacios confinados, trabajo en caliente o eléctrico requieren permiso de trabajo firmado.</li>
+              <li>Nunca operes una máquina o equipo para el que no estás autorizado ni capacitado.</li>
+              <li>Está prohibido trabajar bajo efectos de alcohol o sustancias psicoactivas.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="module-nav">
+        <button class="btn btn-ghost" onclick="App.goTo(2)">← Módulo 2</button>
+        <button class="btn btn-primary" onclick="App.completeModule(3)">Continuar a Módulo 4 →</button>
+      </div>
+    </section>
+
+    <!-- MODULE 4 -->
+    <section class="view" data-view="4" data-module="4">
+      <div class="module-head">
+        <div class="module-num">04</div>
+        <div>
+          <div class="module-sub">Módulo 4 de 5</div>
+          <h2>Actuación ante incidentes, accidentes y emergencias</h2>
+        </div>
+        <button class="speak-btn" data-speak-module="4"><span class="speak-icon">🔊</span> Escuchar módulo</button>
+      </div>
+
+      <p class="lead narratable" data-speak="No todo evento es igual: un incidente es un evento que pudo causar daño pero no lo hizo, un accidente de trabajo sí causa una lesión o la muerte con ocasión del trabajo, y una enfermedad laboral es contraída por la exposición a factores de riesgo propios de la actividad. Saber diferenciarlos te ayuda a reportarlos correctamente.">
+        No todo evento es igual. Diferenciarlos te ayuda a reportarlos correctamente.
+      </p>
+
+      <div class="block">
+        <div class="def-grid">
+          <div class="def-card a"><div class="k">Casi ocurre</div><h5>Incidente</h5><p>Evento relacionado con el trabajo que tuvo el potencial de causar una lesión o enfermedad, pero no lo hizo.</p></div>
+          <div class="def-card b"><div class="k">Ya ocurrió</div><h5>Accidente de trabajo</h5><p>Suceso repentino que sobreviene por causa o con ocasión del trabajo, y que produce una lesión, perturbación funcional o la muerte.</p></div>
+          <div class="def-card c"><div class="k">Se desarrolla</div><h5>Enfermedad laboral</h5><p>Contraída como resultado de la exposición a factores de riesgo propios de la actividad laboral o del ambiente de trabajo.</p></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Si presencias o sufres un accidente: protocolo PAS</h3>
+        <div class="pas-row">
+          <div class="pas-step"><div class="letter">P</div><h5>Proteger</h5><p>Evalúa la escena antes de actuar. No te expongas a un nuevo peligro ni muevas a la persona si sospechas lesión en columna.</p></div>
+          <div class="pas-step"><div class="letter">A</div><h5>Alertar</h5><p>Avisa de inmediato a tu jefe inmediato, al brigadista o al número de emergencias de la empresa.</p></div>
+          <div class="pas-step"><div class="letter">S</div><h5>Socorrer</h5><p>Brinda primeros auxilios solo si estás capacitado; de lo contrario, acompaña y espera ayuda especializada.</p></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Canales y plazos de reporte</h3>
+        <div class="timeline">
+          <div class="tl-item"><div class="t">Inmediato</div><h5>Avisa a tu jefe o encargado de SST</h5><p>Todo incidente o accidente se reporta de inmediato, sin importar su gravedad aparente.</p></div>
+          <div class="tl-item"><div class="t">Máximo 2 días hábiles</div><h5>Reporte formal ante la ARL (FURAT)</h5><p>La empresa debe diligenciar el Formulario Único de Reporte de Accidente de Trabajo dentro de los dos días hábiles siguientes al evento.</p></div>
+          <div class="tl-item"><div class="t">Seguimiento</div><h5>Investigación del evento</h5><p>La empresa investiga las causas para evitar que se repita; tu versión de los hechos es clave para este proceso.</p></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Ante una evacuación</h3>
+        <p style="font-size:14px; color:var(--ink-soft);">Al escuchar la alarma o instrucción de evacuar: conserva la calma, deja lo que estás haciendo de forma segura, dirígete caminando por la ruta señalizada hacia el punto de encuentro, no te devuelvas por objetos personales, y repórtate con el brigadista para verificar que todos están a salvo.</p>
+      </div>
+
+      <div class="block">
+        <h3>Uso básico de un extintor</h3>
+        <p style="font-size:14px; color:var(--ink-soft); margin-bottom:4px;">Regla H-A-O-B, solo si el fuego es incipiente y conoces el procedimiento:</p>
+        <div class="extinguisher">
+          <div class="ext-step"><div class="l">H</div><p>Hale el pasador de seguridad</p></div>
+          <div class="ext-step"><div class="l">A</div><p>Apunte a la base del fuego</p></div>
+          <div class="ext-step"><div class="l">O</div><p>Oprima la palanca</p></div>
+          <div class="ext-step"><div class="l">B</div><p>Barra de lado a lado</p></div>
+        </div>
+      </div>
+
+      <div class="module-nav">
+        <button class="btn btn-ghost" onclick="App.goTo(3)">← Módulo 3</button>
+        <button class="btn btn-primary" onclick="App.completeModule(4)">Continuar a Módulo 5 →</button>
+      </div>
+    </section>
+
+    <!-- MODULE 5 -->
+    <section class="view" data-view="5" data-module="5">
+      <div class="module-head">
+        <div class="module-num">05</div>
+        <div>
+          <div class="module-sub">Módulo 5 de 5</div>
+          <h2>Participación y cultura de prevención</h2>
+        </div>
+        <button class="speak-btn" data-speak-module="5"><span class="speak-icon">🔊</span> Escuchar módulo</button>
+      </div>
+
+      <p class="lead narratable" data-speak="La seguridad no depende de una sola persona: se construye entre todos, todos los días. Reportar lo que ves, participar en las actividades y comunicarte con tus compañeros y líderes son las bases de una cultura preventiva sólida.">
+        La seguridad no depende de una sola persona: se construye entre todos, todos los días. Reportar lo que ves, participar y comunicarte son las bases de una cultura preventiva sólida.
+      </p>
+
+      <div class="block">
+        <h3>Canales para participar y reportar</h3>
+        <div class="channel-grid">
+          <div class="channel"><div class="icon">👁️</div><h5>Actos y condiciones inseguras</h5><p>Reporta cualquier comportamiento riesgoso o situación peligrosa que observes, aunque no haya causado un accidente todavía.</p></div>
+          <div class="channel"><div class="icon">🗣️</div><h5>COPASST</h5><p>Puedes acudir a los miembros del comité con tus inquietudes, quejas o sugerencias sobre las condiciones de trabajo.</p></div>
+          <div class="channel"><div class="icon">📬</div><h5>Líder o encargado de SST</h5><p>Es tu punto de contacto directo para dudas, capacitaciones y seguimiento a tus reportes.</p></div>
+        </div>
+        <p style="font-size:13.5px; color:var(--ink-soft); margin-top:14px;">Reportar nunca debe generar represalias. Un reporte a tiempo evita que un incidente se convierta en un accidente.</p>
+      </div>
+
+      <div class="block">
+        <h3>Mejora continua: ciclo PHVA</h3>
+        <div class="roles-row">
+          <div class="role-card"><div class="k">Planear</div><h5>Identificar y planificar</h5><p>La empresa identifica peligros y define objetivos y metas de SST.</p></div>
+          <div class="role-card"><div class="k">Hacer</div><h5>Implementar</h5><p>Se ejecutan las medidas de prevención, capacitaciones y controles.</p></div>
+          <div class="role-card"><div class="k">Verificar</div><h5>Evaluar resultados</h5><p>Se revisan indicadores, inspecciones y reportes para medir el avance.</p></div>
+        </div>
+        <p style="font-size:13.5px; color:var(--ink-soft); margin-top:10px;">Y se <b>Actúa</b> corrigiendo lo que no funcionó, cerrando el ciclo para volver a empezar mejorando cada vez.</p>
+      </div>
+
+      <div class="block">
+        <h3>Tu compromiso personal</h3>
+        <p style="font-size:13.5px; color:var(--ink-soft); margin-bottom:4px;">Marca los compromisos que asumes a partir de hoy:</p>
+        <div class="commit-list" id="commitList">
+          <label class="commit"><input type="checkbox"><span>Usaré correctamente mis elementos de protección personal.</span></label>
+          <label class="commit"><input type="checkbox"><span>Reportaré de inmediato cualquier peligro, incidente o accidente que observe.</span></label>
+          <label class="commit"><input type="checkbox"><span>Participaré activamente en las capacitaciones y simulacros de mi empresa.</span></label>
+          <label class="commit"><input type="checkbox"><span>Cuidaré mi salud y la de mis compañeros de trabajo.</span></label>
+        </div>
+      </div>
+
+      <div class="module-nav">
+        <button class="btn btn-ghost" onclick="App.goTo(4)">← Módulo 4</button>
+        <button class="btn btn-primary" onclick="App.completeModule(5)">Ir a la evaluación →</button>
+      </div>
+    </section>
+
+    <!-- QUIZ -->
+    <section class="view" data-view="6" data-module="6">
+      <div class="module-head">
+        <div class="module-num">✓</div>
+        <div>
+          <div class="module-sub">Evaluación final</div>
+          <h2>Pon a prueba lo aprendido</h2>
+        </div>
+      </div>
+      <p class="lead">15 preguntas de selección múltiple sobre los 5 módulos. Necesitas un 80% (12 de 15) para aprobar y obtener tu certificado. Puedes intentarlo las veces que necesites.</p>
+
+      <div id="quizIntro">
+        <button class="btn btn-primary" onclick="Quiz.start()" style="margin-top:18px;">Iniciar evaluación →</button>
+      </div>
+
+      <div id="quizBody" style="display:none;">
+        <div class="quiz-head">
+          <div class="quiz-progress mono" id="quizProgress">Pregunta 1 de 15</div>
+          <div class="quiz-progress mono" id="quizScoreLive">Aciertos: 0</div>
+        </div>
+        <div class="qcard" id="qcard"></div>
+      </div>
+
+      <div id="quizResult" style="display:none;"></div>
+    </section>
+
+    <!-- CERTIFICATE -->
+    <section class="view" data-view="7" data-module="7">
+      <div class="module-head">
+        <div class="module-num">🎓</div>
+        <div>
+          <div class="module-sub">Finalización</div>
+          <h2>Tu certificado</h2>
+        </div>
+      </div>
+      <p class="lead" id="certLead">Ingresa tu nombre completo para generar tu certificado de finalización de la inducción en Seguridad y Salud en el Trabajo.</p>
+
+      <div class="cert-form">
+        <div>
+          <label for="certName">Nombre completo</label>
+          <input type="text" id="certName" placeholder="Escribe tu nombre y apellido" autocomplete="name">
+        </div>
+        <div>
+          <label for="certDoc">Documento de identidad (opcional)</label>
+          <input type="text" id="certDoc" placeholder="Número de cédula">
+        </div>
+        <button class="btn btn-primary" onclick="Cert.render()">Generar certificado</button>
+      </div>
+
+      <div class="cert-preview-wrap" id="certWrap" style="display:none;">
+        <canvas id="certCanvas" width="1400" height="990"></canvas>
+      </div>
+      <div class="cert-actions" id="certActions" style="display:none;">
+        <button class="btn btn-primary" onclick="Cert.download()">⬇ Descargar certificado (PNG)</button>
+        <button class="btn btn-ghost" onclick="window.print()">🖨 Imprimir / Guardar como PDF</button>
+      </div>
+      <p class="cert-note" id="certDownloadNote"></p>
+    </section>
+
+  </main>
+
+  <div class="footer-note">
+    <span>Inducción General en Seguridad y Salud en el Trabajo</span>
+    <span id="footerScore"></span>
+  </div>
+</div>
+
+<script>
+/* ================= DATA ================= */
+const MODULE_LABELS = ["Inicio","Fundamentos","Peligros","EPP","Emergencias","Cultura","Evaluación","Certificado"];
+
+const HAZARDS = [
+  {icon:"🔊", name:"Físico", ex:"Ruido, iluminación deficiente, vibración, temperaturas extremas.", prev:"Usa protección auditiva, respeta pausas y reporta equipos que generen ruido o vibración excesiva."},
+  {icon:"🧪", name:"Químico", ex:"Gases, vapores, polvos, líquidos o sustancias inflamables o tóxicas.", prev:"Consulta la ficha de seguridad (FDS), usa el EPP indicado y garantiza ventilación adecuada."},
+  {icon:"🦠", name:"Biológico", ex:"Virus, bacterias, hongos o contacto con fluidos corporales.", prev:"Aplica normas de bioseguridad, lávate las manos con frecuencia y usa los EPP indicados."},
+  {icon:"🧍", name:"Biomecánico", ex:"Posturas prolongadas, movimientos repetitivos, manejo de cargas.", prev:"Aplica pausas activas, usa técnica correcta de levantamiento y ajusta tu puesto de trabajo."},
+  {icon:"🧠", name:"Psicosocial", ex:"Carga laboral, jornadas extensas, relaciones de trabajo conflictivas.", prev:"Comunica tu carga de trabajo a tiempo, respeta los descansos y usa los canales de apoyo disponibles."},
+  {icon:"⚙️", name:"Mecánico", ex:"Piezas en movimiento, proyección de partículas, cortes, atrapamientos.", prev:"No retires guardas de seguridad, mantén distancia de partes móviles y usa protección visual."},
+  {icon:"⚡", name:"Eléctrico", ex:"Contacto directo o indirecto con energía, alta o baja tensión.", prev:"No manipules tableros o cableado sin autorización; reporta cables o conexiones en mal estado."},
+  {icon:"🪜", name:"Locativo", ex:"Pisos irregulares, escaleras, desorden, señalización deficiente.", prev:"Mantén el orden y aseo, respeta la señalización y reporta obstáculos o superficies dañadas."},
+];
+
+const PYRAMID_NOTES = [
+  "Eliminar el peligro de raíz: quitar la máquina, sustancia o tarea peligrosa del proceso. Es la medida más efectiva porque el riesgo deja de existir.",
+  "Sustituir el peligro por uno de menor riesgo: cambiar una sustancia tóxica por una menos peligrosa, por ejemplo.",
+  "Controles de ingeniería: aislar a la persona del peligro con barreras, guardas, ventilación o extracción localizada.",
+  "Controles administrativos: señalización, procedimientos, permisos de trabajo, rotación de personal y capacitación.",
+  "Los EPP son la última barrera, no la primera solución: protegen a la persona, pero no eliminan el peligro. Por eso siempre se combinan con medidas de niveles superiores."
+];
+
+const QUESTIONS = [
+  {q:"¿Cuál norma establece los Estándares Mínimos del SG-SST en Colombia?", opts:["Ley 1010 de 2006","Resolución 0312 de 2019","Decreto 1072 de 2015","Resolución 2400 de 1979"], a:1, fb:"La Resolución 0312 de 2019 fija los Estándares Mínimos según el tamaño de la empresa y su nivel de riesgo."},
+  {q:"¿Quién debe afiliar al trabajador a la ARL y asumir el costo de la afiliación?", opts:["El trabajador, por su cuenta","Se divide entre empleador y trabajador","El empleador, en su totalidad","El COPASST"], a:2, fb:"La afiliación a la ARL es responsabilidad y costo exclusivo del empleador."},
+  {q:"¿Qué significa la sigla COPASST?", opts:["Comité Paritario de Seguridad y Salud en el Trabajo","Comisión Permanente de Accidentes","Consejo de Prevención de Accidentes Sociales","Comité de Protección al Salario del Trabajador"], a:0, fb:"El COPASST hace seguimiento al SG-SST y recibe inquietudes de los trabajadores."},
+  {q:"Según la jerarquía de controles, ¿cuál es la medida más efectiva frente a un peligro?", opts:["Usar EPP","Eliminar el peligro de raíz","Dar una charla de seguridad","Rotar al personal"], a:1, fb:"Eliminar el peligro hace que el riesgo deje de existir; es la medida más efectiva."},
+  {q:"Trabajar muchas horas frente al computador con mala postura es un peligro de tipo:", opts:["Químico","Biológico","Biomecánico","Eléctrico"], a:2, fb:"Las posturas y movimientos prolongados corresponden al peligro biomecánico."},
+  {q:"El ruido excesivo de una máquina es un peligro de tipo:", opts:["Físico","Psicosocial","Locativo","Mecánico"], a:0, fb:"El ruido, la vibración y la temperatura son peligros físicos."},
+  {q:"Antes de usar un elemento de protección personal siempre debes:", opts:["Prestarlo a un compañero primero","Revisar que esté en buen estado y sea el adecuado","Guardarlo sin revisar","Usarlo solo si el jefe está mirando"], a:1, fb:"Revisar el EPP antes de cada uso evita que falle cuando más lo necesitas."},
+  {q:"Los elementos de protección personal (EPP) son:", opts:["Compartibles entre turnos","Personales e intransferibles","Opcionales si te sientes seguro","Responsabilidad exclusiva del trabajador comprarlos"], a:1, fb:"Los EPP se seleccionan para tu riesgo y talla específicos; no deben compartirse."},
+  {q:"¿Cuál es el último nivel de la jerarquía de controles, el menos efectivo por sí solo?", opts:["Sustitución","Controles de ingeniería","Elementos de protección personal","Eliminación"], a:2, fb:"Los EPP protegen a la persona pero no eliminan el peligro; van siempre después de otros controles."},
+  {q:"La sigla PAS, ante un accidente de trabajo, recuerda:", opts:["Proteger, Alertar, Socorrer","Parar, Analizar, Seguir","Prevenir, Actuar, Sanar","Proteger, Auxiliar, Sancionar"], a:0, fb:"Proteger la escena, Alertar a los responsables y Socorrer si estás capacitado."},
+  {q:"¿En cuántos días hábiles debe reportarse formalmente un accidente de trabajo (FURAT) ante la ARL?", opts:["15 días hábiles","2 días hábiles","30 días calendario","No tiene plazo definido"], a:1, fb:"El reporte formal ante la ARL debe hacerse dentro de los 2 días hábiles siguientes al evento."},
+  {q:"Si escuchas la alarma de evacuación, debes dirigirte:", opts:["A recoger tus objetos personales primero","Corriendo por cualquier salida","Al punto de encuentro, por la ruta señalizada","A tu puesto de trabajo a esperar instrucciones"], a:2, fb:"Camina, sin devolverte por objetos, hacia el punto de encuentro definido."},
+  {q:"Si observas una condición insegura, como un cable suelto en el piso, debes:", opts:["Ignorarlo si no es tu área","Reportarlo de inmediato por los canales establecidos","Esperar a que alguien más lo reporte","Moverlo tú mismo sin avisar a nadie"], a:1, fb:"Reportar a tiempo evita que una condición insegura se convierta en un accidente."},
+  {q:"Reportar un acto o condición insegura:", opts:["Puede generarte una sanción","Es responsabilidad de todos y no debe generar represalias","Solo lo puede hacer el COPASST","Es opcional"], a:1, fb:"Reportar es un deber de todos los trabajadores y nunca debe tener consecuencias negativas para quien reporta."},
+  {q:"La mejora continua del SG-SST se basa en el ciclo:", opts:["Ver, Oír, Callar, Actuar","Planear, Hacer, Verificar, Actuar","Iniciar, Ejecutar, Cerrar, Archivar","Prevenir, Actuar, Sancionar, Auditar"], a:1, fb:"El ciclo PHVA (Planear, Hacer, Verificar, Actuar) es la base de la mejora continua."},
+];
+
+/* ================= TTS ================= */
+const TTS = {
+  utter:null, currentBtn:null,
+  pickVoice(){
+    const voices = speechSynthesis.getVoices();
+    return voices.find(v=>v.lang==='es-CO') || voices.find(v=>v.lang==='es-MX') ||
+           voices.find(v=>v.lang==='es-ES') || voices.find(v=>v.lang && v.lang.startsWith('es')) || null;
+  },
+  speak(text, el){
+    if(!('speechSynthesis' in window)) return;
+    if(this.currentBtn===el && speechSynthesis.speaking){ this.stop(); return; }
+    this.stop();
+    const u = new SpeechSynthesisUtterance(text);
+    const v = this.pickVoice();
+    if(v) u.voice = v;
+    u.lang = v ? v.lang : 'es-ES';
+    u.rate = 0.98;
+    u.onend = ()=>this.clearActive();
+    u.onerror = ()=>this.clearActive();
+    this.utter = u; this.currentBtn = el;
+    if(el) el.classList.add('speaking','on');
+    speechSynthesis.speak(u);
+  },
+  stop(){
+    if('speechSynthesis' in window) speechSynthesis.cancel();
+    this.clearActive();
+  },
+  clearActive(){
+    if(this.currentBtn) this.currentBtn.classList.remove('speaking','on');
+    this.currentBtn = null;
+  }
+};
+
+document.addEventListener('click', (e)=>{
+  const p = e.target.closest('.narratable');
+  if(p){ TTS.speak(p.getAttribute('data-speak') || p.textContent, p); return; }
+  const mb = e.target.closest('[data-speak-module]');
+  if(mb){
+    const modId = mb.getAttribute('data-speak-module');
+    const section = document.querySelector('section[data-view="'+modId+'"]');
+    const parts = [...section.querySelectorAll('.narratable, .flip-back')].map(n=>n.getAttribute('data-speak')||n.textContent);
+    TTS.speak(parts.join('. '), mb);
+  }
+});
+if('speechSynthesis' in window){ speechSynthesis.onvoiceschanged = ()=>{}; }
+
+/* ================= APP / NAV ================= */
+const App = {
+  current:0,
+  unlocked:new Set([0,1]),
+  heroSpeaking:false,
+
+  init(){
+    this.renderSteps();
+    this.renderHazards();
+    this.renderPyramid();
+    this.bindCommit();
+    this.goTo(0);
+    this.bind3D();
+  },
+
+  renderSteps(){
+    const wrap = document.getElementById('steps');
+    wrap.innerHTML = '';
+    MODULE_LABELS.forEach((label,i)=>{
+      const d = document.createElement('button');
+      d.className = 'step-dot';
+      d.innerHTML = '<span class="n">'+(i===0?'•':i<6?i:(i===6?'✓':'🎓'))+'</span><span class="step-label">'+label+'</span>';
+      d.onclick = ()=>this.goTo(i);
+      d.setAttribute('data-step', i);
+      wrap.appendChild(d);
+    });
+  },
+
+  refreshSteps(){
+    document.querySelectorAll('.step-dot').forEach(d=>{
+      const i = +d.getAttribute('data-step');
+      d.classList.toggle('current', i===this.current);
+      d.classList.toggle('done', this.unlocked.has(i) && i<this.current);
+      d.disabled = !this.unlocked.has(i);
+    });
+    const total = MODULE_LABELS.length-1;
+    const doneCount = [...this.unlocked].filter(i=>i>0).length;
+    document.getElementById('progressFill').style.width = Math.min(100,(doneCount/total)*100)+'%';
+  },
+
+  goTo(i){
+    if(!this.unlocked.has(i)) return;
+    TTS.stop();
+    document.querySelectorAll('section.view').forEach(s=>s.dataset.active='false');
+    document.querySelector('section[data-view="'+i+'"]').dataset.active='true';
+    this.current = i;
+    this.refreshSteps();
+    window.scrollTo({top:0, behavior:'smooth'});
+  },
+
+  completeModule(i){
+    this.unlocked.add(i+1);
+    if(i===5) this.unlocked.add(6);
+    this.goTo(i+1);
+  },
+
+  toggleSpeakHero(){
+    const btn = document.getElementById('heroSpeak');
+    const text = "Objetivos del curso. Reconocer los principios básicos de la seguridad y salud en el trabajo y tus responsabilidades. Identificar peligros y riesgos habituales y aplicar medidas preventivas. Utilizar correctamente los elementos de protección personal. Responder adecuadamente ante emergencias, accidentes e incidentes. Y adoptar hábitos de participación que contribuyan a una cultura preventiva.";
+    TTS.speak(text, btn);
+  },
+
+  renderHazards(){
+    const grid = document.getElementById('hazardGrid');
+    grid.innerHTML = HAZARDS.map((h,i)=>(
+      '<div class="flip" data-i="'+i+'" onclick="App.flipHazard(this)">'+
+        '<div class="flip-inner">'+
+          '<div class="flip-face flip-front"><div class="icon">'+h.icon+'</div><div><div class="name">'+h.name+'</div><div class="tap">Toca para ver</div></div></div>'+
+          '<div class="flip-face flip-back" data-speak="'+h.name+'. Ejemplos: '+h.ex+' Prevención: '+h.prev+'"><b>Ejemplos</b><div>'+h.ex+'</div><b>Prevención</b><div>'+h.prev+'</div></div>'+
+        '</div>'+
+      '</div>'
+    )).join('');
+  },
+  flipHazard(el){ el.classList.toggle('on'); },
+
+  renderPyramid(){
+    document.querySelectorAll('.pyr-row').forEach(row=>{
+      row.addEventListener('click', ()=>{
+        const i = +row.getAttribute('data-i');
+        document.getElementById('pyrNote').textContent = PYRAMID_NOTES[i];
+      });
+    });
+  },
+
+  bindCommit(){
+    document.querySelectorAll('.commit').forEach(c=>{
+      const input = c.querySelector('input');
+      input.addEventListener('change', ()=>c.classList.toggle('checked', input.checked));
+    });
+  },
+
+  bind3D(){
+    const wrap = document.getElementById('sceneWrap');
+    const scene = document.getElementById('scene3d');
+    if(!wrap || !scene) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce) return;
+    wrap.addEventListener('mousemove', (e)=>{
+      const r = wrap.getBoundingClientRect();
+      const px = (e.clientX-r.left)/r.width - .5;
+      const py = (e.clientY-r.top)/r.height - .5;
+      scene.style.transform = 'rotateX('+(8-py*16)+'deg) rotateY('+(-14+px*24)+'deg)';
+    });
+    wrap.addEventListener('mouseleave', ()=>{ scene.style.transform = 'rotateX(8deg) rotateY(-14deg)'; });
+  }
+};
+
+/* ================= QUIZ ================= */
+const Quiz = {
+  order:[], idx:0, correctCount:0, answers:[], locked:false,
+
+  start(){
+    this.order = QUESTIONS.map((q,i)=>i);
+    this.idx=0; this.correctCount=0; this.answers=[];
+    document.getElementById('quizIntro').style.display='none';
+    document.getElementById('quizResult').style.display='none';
+    document.getElementById('quizBody').style.display='block';
+    this.renderQ();
+  },
+
+  renderQ(){
+    this.locked=false;
+    const qi = this.order[this.idx];
+    const q = QUESTIONS[qi];
+    document.getElementById('quizProgress').textContent = 'Pregunta '+(this.idx+1)+' de '+QUESTIONS.length;
+    document.getElementById('quizScoreLive').textContent = 'Aciertos: '+this.correctCount;
+    const card = document.getElementById('qcard');
+    card.innerHTML =
+      '<div class="qn">MÓDULO '+Math.min(5,Math.floor(qi/3)+1)+' · PREGUNTA '+(this.idx+1)+'</div>'+
+      '<h3>'+q.q+'</h3>'+
+      '<div class="opt-list">'+q.opts.map((o,i)=>
+        '<div class="opt" data-i="'+i+'"><span class="k">'+String.fromCharCode(65+i)+'</span><span>'+o+'</span></div>'
+      ).join('')+'</div>'+
+      '<div class="feedback" id="qfeedback"></div>'+
+      '<div class="qfoot"><span class="mono" style="font-size:12px;color:var(--ink-soft);">Selecciona una opción</span>'+
+      '<button class="btn btn-primary btn-sm" id="qNextBtn" style="display:none;" onclick="Quiz.next()">'+(this.idx===QUESTIONS.length-1?'Ver resultado':'Siguiente')+' →</button></div>';
+
+    card.querySelectorAll('.opt').forEach(o=>{
+      o.addEventListener('click', ()=>this.answer(+o.getAttribute('data-i')));
+    });
+  },
+
+  answer(i){
+    if(this.locked) return;
+    this.locked = true;
+    const qi = this.order[this.idx];
+    const q = QUESTIONS[qi];
+    const correct = i===q.a;
+    if(correct) this.correctCount++;
+    this.answers.push({qi, chosen:i, correct});
+    document.querySelectorAll('#qcard .opt').forEach(o=>{
+      o.classList.add('locked');
+      const oi = +o.getAttribute('data-i');
+      if(oi===q.a) o.classList.add('correct');
+      else if(oi===i) o.classList.add('wrong');
+    });
+    const fb = document.getElementById('qfeedback');
+    fb.className = 'feedback show '+(correct?'ok':'bad');
+    fb.textContent = (correct?'✓ Correcto. ':'✕ No es correcto. ')+q.fb;
+    document.getElementById('qNextBtn').style.display='inline-flex';
+  },
+
+  next(){
+    if(this.idx < QUESTIONS.length-1){ this.idx++; this.renderQ(); }
+    else this.finish();
+  },
+
+  finish(){
+    document.getElementById('quizBody').style.display='none';
+    const pct = Math.round((this.correctCount/QUESTIONS.length)*100);
+    const passed = pct>=80;
+    if(passed) App.unlocked.add(7);
+    const ringColor = passed?'var(--safe)':'var(--danger)';
+    const wrap = document.getElementById('quizResult');
+    wrap.style.display='block';
+    wrap.innerHTML =
+      '<div class="result-wrap">'+
+      '<div class="score-ring" style="background:conic-gradient('+ringColor+' '+(pct*3.6)+'deg, var(--surface-2) 0deg); ">'+
+        '<div style="background:var(--bg); width:132px; height:132px; border-radius:50%; display:grid; place-items:center;">'+
+          '<div><div class="num" style="color:'+ringColor+';">'+pct+'%</div></div>'+
+        '</div>'+
+      '</div>'+
+      '<h3 style="text-align:center; font-size:1.6rem;">'+(passed?'¡Aprobaste la evaluación!':'Aún no alcanzas el 80%')+'</h3>'+
+      '<p style="text-align:center; color:var(--ink-soft);">Respondiste correctamente '+this.correctCount+' de '+QUESTIONS.length+' preguntas.</p>'+
+      '<div style="display:flex; gap:12px; justify-content:center; margin-top:18px; flex-wrap:wrap;">'+
+        (passed?'<button class="btn btn-primary" onclick="App.goTo(7)">Generar mi certificado →</button>':'<button class="btn btn-primary" onclick="Quiz.start()">Reintentar evaluación</button>')+
+        '<button class="btn btn-ghost" onclick="App.goTo(1)">Repasar módulos</button>'+
+      '</div></div>';
+    document.getElementById('footerScore').textContent = 'Último resultado: '+pct+'%';
+    App.refreshSteps();
+  }
+};
+
+/* ================= CERTIFICATE ================= */
+const Cert = {
+  render(){
+    const name = document.getElementById('certName').value.trim();
+    if(!name){ document.getElementById('certName').focus(); return; }
+    const doc = document.getElementById('certDoc').value.trim();
+    const pct = Quiz.correctCount ? Math.round((Quiz.correctCount/QUESTIONS.length)*100) : 100;
+    const dateStr = new Date().toLocaleDateString('es-CO', {day:'2-digit', month:'long', year:'numeric'});
+
+    const canvas = document.getElementById('certCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const css = getComputedStyle(document.documentElement);
+    const ink = css.getPropertyValue('--ink').trim() || '#132420';
+    const primary = css.getPropertyValue('--primary').trim() || '#0B3D3E';
+    const accent = css.getPropertyValue('--accent').trim() || '#F2660B';
+
+    // background
+    ctx.fillStyle = '#FBF9F3';
+    ctx.fillRect(0,0,W,H);
+    const grad = ctx.createLinearGradient(0,0,W,0);
+    grad.addColorStop(0, primary); grad.addColorStop(1, '#0E4749');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,W,26);
+    ctx.fillStyle = accent; ctx.fillRect(0,H-26,W,26);
+
+    ctx.strokeStyle = 'rgba(19,36,32,.25)'; ctx.lineWidth=2;
+    ctx.strokeRect(46,56,W-92,H-112);
+
+    ctx.textAlign='center';
+    ctx.fillStyle = accent;
+    ctx.font = '600 20px "IBM Plex Mono", monospace';
+    ctx.fillText('CERTIFICADO DE FINALIZACIÓN', W/2, 140);
+
+    ctx.fillStyle = primary;
+    ctx.font = '800 64px "Big Shoulders Display", sans-serif';
+    ctx.fillText('INDUCCIÓN EN SEGURIDAD', W/2, 210);
+    ctx.fillText('Y SALUD EN EL TRABAJO', W/2, 275);
+
+    ctx.fillStyle = ink;
+    ctx.font = '15px "Public Sans", sans-serif';
+    ctx.fillText('Se otorga el presente certificado a', W/2, 340);
+
+    ctx.fillStyle = ink;
+    ctx.font = 'italic 700 46px "Public Sans", serif';
+    let displayName = name;
+    ctx.font = 'italic 700 46px "Public Sans", serif';
+    while(ctx.measureText(displayName).width > W-220 && displayName.length>4){ displayName = displayName.slice(0,-1); }
+    ctx.fillText(displayName, W/2, 405);
+    ctx.strokeStyle = accent; ctx.lineWidth=2;
+    const lw = Math.min(W-220, ctx.measureText(displayName).width+40);
+    ctx.beginPath(); ctx.moveTo(W/2-lw/2, 425); ctx.lineTo(W/2+lw/2, 425); ctx.stroke();
+
+    ctx.font = '15px "Public Sans", sans-serif';
+    ctx.fillText(doc ? 'Identificado(a) con documento N.º '+doc : ' ', W/2, 455);
+
+    ctx.font = '16px "Public Sans", sans-serif';
+    const line1 = 'por haber completado satisfactoriamente la inducción general en Seguridad y Salud en el';
+    const line2 = 'Trabajo, cubriendo fundamentos normativos, identificación de peligros, uso de elementos de';
+    const line3 = 'protección personal, actuación ante emergencias y cultura de prevención.';
+    ctx.fillText(line1, W/2, 500);
+    ctx.fillText(line2, W/2, 524);
+    ctx.fillText(line3, W/2, 548);
+
+    // footer stats
+    ctx.textAlign='left';
+    ctx.font = '600 13px "IBM Plex Mono", monospace';
+    ctx.fillStyle = primary;
+    ctx.fillText('FECHA', 110, 630);
+    ctx.fillText('EVALUACIÓN', 110, 690);
+    ctx.fillStyle = ink;
+    ctx.font = '600 20px "Public Sans", sans-serif';
+    ctx.fillText(dateStr, 110, 658);
+    ctx.fillText(pct+'% de aciertos', 110, 718);
+
+    ctx.textAlign='right';
+    ctx.font = '600 13px "IBM Plex Mono", monospace';
+    ctx.fillStyle = primary;
+    ctx.fillText('MÓDULOS COMPLETADOS', W-110, 630);
+    ctx.fillStyle = ink;
+    ctx.font = '600 20px "Public Sans", sans-serif';
+    ctx.fillText('5 de 5', W-110, 658);
+
+    // seal
+    ctx.save();
+    ctx.translate(W/2, H-120);
+    ctx.beginPath(); ctx.arc(0,0,54,0,Math.PI*2);
+    ctx.fillStyle = accent; ctx.fill();
+    ctx.fillStyle='#fff'; ctx.textAlign='center';
+    ctx.font='800 26px "Big Shoulders Display", sans-serif';
+    ctx.fillText('SST', 0, 10);
+    ctx.restore();
+
+    document.getElementById('certWrap').style.display='block';
+    document.getElementById('certActions').style.display='flex';
+    document.getElementById('certLead').textContent = '¡Certificado generado! Puedes descargarlo o imprimirlo.';
+  },
+
+  async download(){
+    const canvas = document.getElementById('certCanvas');
+    const note = document.getElementById('certDownloadNote');
+    canvas.toBlob(async (blob)=>{
+      const filename = 'certificado-sst-' + (document.getElementById('certName').value.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-') || 'colaborador') + '.png';
+      try{
+        const downloads = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+        if(downloads){
+          try{
+            await downloads.save({filename, data:blob});
+            note.textContent = 'Certificado descargado.';
+            return;
+          }catch(err){
+            if(err && err.code==='declined'){ note.textContent='Descarga cancelada.'; return; }
+          }
+        }
+      }catch(e){}
+      // fallback: open in new tab so the user can save manually
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      note.textContent = 'Se abrió el certificado en una pestaña nueva: guárdalo desde allí, o usa "Imprimir / Guardar como PDF".';
+    }, 'image/png');
+  }
+};
+
+App.init();
+</script>
